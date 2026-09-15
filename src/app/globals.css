@@ -1,0 +1,307 @@
+@import "tailwindcss";
+
+:root {
+  --bg-0: #05070f;
+  --bg-1: #0a0e1c;
+  --ink-0: #f4f6fb;
+  --ink-1: rgba(244, 246, 251, 0.76);
+  --ink-2: rgba(244, 246, 251, 0.54);
+  --panel-bg: rgba(9, 13, 26, 0.74);
+  --panel-bg-strong: rgba(8, 12, 24, 0.86);
+  --panel-border: rgba(255, 255, 255, 0.14);
+  --panel-shadow: 0 24px 70px rgba(2, 4, 10, 0.6);
+  --opaque-fallback: #10141f;
+  --status-fresh: #4ade80;
+  --status-stale: #fbbf24;
+  --status-error: #fb7185;
+  --status-waiting: #93c5fd;
+  --focus-ring: #7dd3fc;
+  --tone-minimal: #7dd3fc;
+  --tone-low: #38bdf8;
+  --tone-moderate: #22d3ee;
+  --tone-high: #fb923c;
+  --tone-extreme: #fb7185;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-0);
+  color: var(--ink-0);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Apple SD Gothic Neo", "Noto Sans KR",
+    sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- Layout: full-bleed map stage ---------- */
+
+.aw-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--bg-0);
+}
+
+@media (min-width: 1024px) {
+  .aw-stage {
+    height: 100dvh;
+    overflow: hidden;
+  }
+}
+
+/* Mobile: a normal-flow block, so it sits between the header and the panels in DOM/visual order. */
+.aw-map-layer {
+  position: relative;
+  height: 42vh;
+  min-height: 260px;
+  width: 100%;
+  background: radial-gradient(120% 100% at 50% 0%, rgba(56, 189, 248, 0.08), transparent 60%), #05070f;
+}
+
+/* Desktop: pulled out of flow into a full-bleed background layer behind the header/panels/dock, which each get position:relative + z-index via the `lg:relative lg:z-10` utility classes so they still paint above it. */
+@media (min-width: 1024px) {
+  .aw-map-layer {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    z-index: 0;
+  }
+}
+
+/* ---------- Glass surfaces ---------- */
+
+.glass-panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 26px;
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+}
+
+.glass-panel-strong {
+  background: var(--panel-bg-strong);
+  border: 1px solid var(--panel-border);
+  border-radius: 22px;
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(26px) saturate(160%);
+  -webkit-backdrop-filter: blur(26px) saturate(160%);
+}
+
+.glass-bar {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  box-shadow: 0 12px 34px rgba(2, 4, 10, 0.45);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass-panel,
+  .glass-panel-strong,
+  .glass-bar {
+    background: var(--opaque-fallback);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-panel,
+  .glass-panel-strong,
+  .glass-bar {
+    background: var(--opaque-fallback);
+  }
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+a,
+button {
+  color: inherit;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Magnitude severity ladder ---------- */
+
+.magnitude-ladder {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.magnitude-ladder-step {
+  width: 9px;
+  height: 14px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.magnitude-ladder-step[data-active="true"] {
+  background: var(--step-color, var(--tone-moderate));
+}
+
+/* ---------- Earthquake ripple marker ---------- */
+
+.eq-ripple-glow {
+  fill: var(--eq-color, var(--status-fresh));
+  opacity: calc(0.5 * var(--eq-tone-opacity, 1));
+  filter: blur(4px);
+}
+
+.eq-ripple-core {
+  fill: var(--eq-color, var(--status-fresh));
+}
+
+.eq-ripple-ring {
+  fill: none;
+  stroke: var(--eq-color, var(--status-fresh));
+  stroke-width: 1.4;
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: calc(0.6 * var(--eq-tone-opacity, 1));
+  animation: eq-ripple-expand 3.4s ease-out infinite;
+  animation-delay: var(--ring-delay, 0s);
+}
+
+@keyframes eq-ripple-expand {
+  0% {
+    transform: scale(0.5);
+    opacity: calc(0.6 * var(--eq-tone-opacity, 1));
+  }
+  65% {
+    opacity: calc(0.18 * var(--eq-tone-opacity, 1));
+  }
+  100% {
+    transform: scale(var(--ring-max-scale, 1.8));
+    opacity: 0;
+  }
+}
+
+.eq-ripple[data-loading="true"] .eq-ripple-core {
+  animation: eq-core-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes eq-core-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.eq-ripple[data-status="stale"] .eq-ripple-ring {
+  animation: none;
+  stroke-dasharray: 3 5;
+  transform: scale(1);
+  opacity: 0.55;
+}
+
+.eq-ripple[data-status="stale"] .eq-ripple-glow {
+  opacity: 0.25;
+  filter: blur(2px);
+}
+
+.eq-ripple[data-recovered="true"] .eq-ripple-ring {
+  animation-name: eq-ripple-recover;
+  animation-duration: 1.4s;
+  animation-iteration-count: 1;
+  animation-delay: 0s;
+}
+
+@keyframes eq-ripple-recover {
+  0% {
+    transform: scale(0.3);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(calc(var(--ring-max-scale, 1.8) * 1.15));
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eq-ripple-ring {
+    animation: none !important;
+    transform: scale(1) !important;
+    opacity: calc(0.32 * var(--eq-tone-opacity, 1)) !important;
+  }
+  .eq-ripple[data-status="stale"] .eq-ripple-ring {
+    opacity: 0.45 !important;
+  }
+  .eq-ripple[data-loading="true"] .eq-ripple-core {
+    animation: none !important;
+    opacity: 0.7 !important;
+  }
+}
+
+/* ---------- Popover / dialog ---------- */
+
+.info-popover {
+  position: absolute;
+  z-index: 40;
+  /* Anchored to a full-width relative row (see MagnitudeInterpretation), so
+     matching that row's width keeps the popover inside the panel instead of
+     overflowing past its edge. */
+  width: 100%;
+  max-width: 320px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-1);
+}
+
+.trust-dialog {
+  background: var(--panel-bg-strong);
+  color: var(--ink-0);
+  border: 1px solid var(--panel-border);
+  border-radius: 22px;
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(26px) saturate(160%);
+  -webkit-backdrop-filter: blur(26px) saturate(160%);
+  max-width: min(560px, 92vw);
+  width: 100%;
+  padding: 0;
+}
+
+.trust-dialog::backdrop {
+  background: rgba(3, 5, 12, 0.62);
+  backdrop-filter: blur(2px);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .trust-dialog {
+    background: var(--opaque-fallback);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
