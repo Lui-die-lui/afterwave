@@ -13,10 +13,11 @@ export interface AccessLogFilterState {
   username: string;
   resource: string;
   verdict: AccessVerdict | "";
+  minRisk: number | "";
 }
 
 export function createInitialAccessLogFilterState(): AccessLogFilterState {
-  return { username: "", resource: "", verdict: "" };
+  return { username: "", resource: "", verdict: "", minRisk: "" };
 }
 
 function normalizeUsername(value: string): string {
@@ -36,6 +37,9 @@ export function filterAccessLogs(
       return false;
     }
     if (filters.verdict && log.verdict !== filters.verdict) {
+      return false;
+    }
+    if (filters.minRisk !== "" && log.riskScore < filters.minRisk) {
       return false;
     }
     return true;
