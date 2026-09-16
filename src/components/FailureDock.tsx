@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ScenarioKey } from "@/lib/syntheticRunner";
 import type { SyntheticState } from "@/lib/types";
-import { IconChevronDown, IconChevronUp, IconRefresh } from "./icons";
+import { IconChevronUp, IconRefresh } from "./icons";
 import { StatusBadge } from "./StatusBadge";
 
 const SCENARIO_BUTTONS: { key: ScenarioKey; label: string; hint: string }[] = [
@@ -27,7 +27,9 @@ export function FailureDock({
   previewActive: boolean;
   onEnterPreview: () => void;
   onExitPreview: () => void;
-  /** Desktop-only collapse (mirrors the left/right side rails) — mobile always shows the dock. */
+  /** Desktop-only collapse (mirrors the left/right side rails) — closing hides the whole
+   *  dock panel and leaves only a small tab hugging the bottom viewport edge, the same
+   *  visual language as `.aw-edge-tab` on the side rails. Mobile always shows the dock. */
   open: boolean;
   onToggle: () => void;
 }) {
@@ -83,16 +85,37 @@ export function FailureDock({
   return (
     <>
       <div id="aw-dock-panel" className="aw-dock flex flex-col gap-2 px-3.5 py-2.5" role="group" aria-label="실패 실험실 — 합성 시험 전용">
-        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
-          <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1">
-            <p className="text-[12px] font-semibold text-[var(--ink-0)]">실패 실험실</p>
-            <span className="hidden text-[11px] text-[var(--ink-2)] sm:inline">합성 시험 전용 · 실제 기록 미변경</span>
-            {syntheticState && <StatusBadge status={syntheticState.status} size="sm" />}
+        <div className="relative flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+          {/* Centered on top of the row (not a row of its own) so it sits at
+              the same height as the preview/refresh buttons on the right. */}
+          <div className="hidden lg:absolute lg:left-1/2 lg:top-1/2 lg:flex lg:-translate-x-1/2 lg:-translate-y-1/2 lg:justify-center">
+            <button
+              type="button"
+              onClick={onToggle}
+              aria-expanded={open}
+              aria-controls="aw-dock-panel"
+              aria-label="실패 실험실 접기"
+              title="실패 실험실 접기"
+              className="aw-btn aw-btn-sm aw-dock-collapse-btn"
+            >
+              <IconChevronUp className="h-4 w-4" aria-hidden />
+              실패 실험실 접기
+            </button>
+          </div>
+
+          <div className="flex min-w-0 flex-nowrap items-center gap-x-2.5 overflow-hidden">
+            <p className="shrink-0 text-[12px] font-semibold text-[var(--ink-0)]">실패 실험실</p>
+            <span className="hidden truncate text-[11px] text-[var(--ink-2)] sm:inline">합성 시험 전용 · 실제 기록 미변경</span>
+            {syntheticState && (
+              <span className="shrink-0">
+                <StatusBadge status={syntheticState.status} size="sm" />
+              </span>
+            )}
             {activeScenario && (
-              <span className="tabular hidden text-[11px] text-[var(--ink-2)] md:inline">최근 재생: {activeScenario}</span>
+              <span className="tabular hidden shrink-0 text-[11px] text-[var(--ink-2)] md:inline">최근 재생: {activeScenario}</span>
             )}
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex shrink-0 items-center gap-1.5">
             {/* Separate from the API-driven scenarios below: this never
                 calls `/api/earthquake/replay` or any other endpoint — it
                 only swaps the whole screen to a local, in-memory fixture, so
@@ -111,17 +134,6 @@ export function FailureDock({
             <button type="button" onClick={loadInitial} className="aw-btn aw-btn-sm aw-btn-ghost">
               <IconRefresh className="h-3.5 w-3.5" aria-hidden />
               새로고침
-            </button>
-            <button
-              type="button"
-              onClick={onToggle}
-              aria-expanded={open}
-              aria-controls="aw-dock-panel"
-              aria-label="실패 실험실 접기"
-              title="실패 실험실 접기"
-              className="aw-icon-btn hidden lg:inline-grid"
-            >
-              <IconChevronDown className="h-4 w-4" aria-hidden />
             </button>
           </div>
         </div>

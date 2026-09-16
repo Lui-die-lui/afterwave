@@ -117,14 +117,14 @@ function useAnimatedRail(storageKey: string) {
  * need the timed `opening`/`closing` sequencing `useAnimatedRail` exists for.
  */
 function usePersistedRail(storageKey: string) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     try {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (localStorage.getItem(storageKey) === "closed") setOpen(false);
+      if (localStorage.getItem(storageKey) === "open") setOpen(true);
     } catch {
-      // Private browsing / blocked storage: default to open for this visit.
+      // Private browsing / blocked storage: default to closed for this visit.
     }
   }, [storageKey]);
 

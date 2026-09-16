@@ -675,6 +675,11 @@ button {
     gap: 12px;
     flex: 1;
     min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    padding-right: 2px;
+    padding-bottom: 2px;
   }
 
   /* Collapsed state: the only thing left is a small tab hugging the
@@ -738,56 +743,6 @@ button {
     font-weight: 600;
     letter-spacing: 0.1em;
     line-height: 1;
-  }
-}
-
-/* ---------- Bottom dock collapse (desktop only) ---------- */
-/* Mirrors the left/right rail's open/closed pair exactly — collapsing hides
-   the dock panel entirely and leaves only a small tab hugging the bottom
-   viewport edge, so the map behind reclaims that space. Mobile always shows
-   the dock in normal flow; this collapse only exists at lg+. */
-.aw-dock-tab {
-  display: none;
-}
-
-@media (min-width: 1024px) {
-  #aw-dock[data-open="false"] .aw-dock {
-    display: none;
-  }
-
-  #aw-dock[data-open="true"] .aw-dock-tab {
-    display: none;
-  }
-
-  .aw-dock-tab {
-    display: flex;
-    position: absolute;
-    left: 50%;
-    bottom: 0;
-    transform: translateX(-50%);
-    width: 128px;
-    height: 32px;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    background: var(--surface-3);
-    border: 1px solid var(--border-glass-strong);
-    border-bottom: none;
-    border-radius: 14px 14px 0 0;
-    box-shadow: var(--shadow-glass);
-    color: var(--ink-1);
-    font-size: 12px;
-    font-weight: 600;
-    pointer-events: auto;
-    cursor: pointer;
-    transition:
-      background-color var(--motion-fast) ease,
-      color var(--motion-fast) ease;
-  }
-
-  .aw-dock-tab:hover {
-    background: var(--surface-4);
-    color: var(--ink-0);
   }
 }
 
@@ -1325,6 +1280,59 @@ button {
   box-shadow: var(--shadow-glass);
   backdrop-filter: blur(18px) saturate(140%);
   -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+.aw-dock-collapse-btn {
+  padding-inline: 20px;
+}
+
+/* Mirrors `.aw-edge-tab` on the side rails: collapsing hides the whole dock
+   panel and leaves only a small tab hugging the bottom viewport edge, so the
+   map behind reclaims that space. Mobile always shows the dock in normal
+   flow; this collapse only exists at lg+. */
+.aw-dock-tab {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  #aw-dock[data-open="false"] .aw-dock {
+    display: none;
+  }
+
+  #aw-dock[data-open="true"] .aw-dock-tab {
+    display: none;
+  }
+
+  .aw-dock-tab {
+    display: flex;
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    width: 128px;
+    height: 32px;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: var(--surface-3);
+    border: 1px solid var(--border-glass-strong);
+    border-bottom: none;
+    border-radius: 14px 14px 0 0;
+    box-shadow: var(--shadow-glass);
+    color: var(--ink-1);
+    font-size: 12px;
+    font-weight: 600;
+    pointer-events: auto;
+    cursor: pointer;
+    transition:
+      background-color var(--motion-fast) ease,
+      color var(--motion-fast) ease;
+  }
+
+  .aw-dock-tab:hover {
+    background: var(--surface-4);
+    color: var(--ink-0);
+  }
 }
 
 .aw-dock-seg {
