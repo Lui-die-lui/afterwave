@@ -1,36 +1,38 @@
-import { JsonFileStore } from "./jsonFileStore";
-import type { DailyRecord, NormalizedEarthquake } from "./types";
-
-const store = new JsonFileStore<DailyRecord[]>("real/records.json", []);
+import { createSupabaseRealRecordsRepository, type RealRecordsRepository, type RealUpsertInput } from "./supabase/realRecordsRepository";
+import type { DailyRecord } from "./types";
 
 /**
- * Upserts by `recordDate` (Asia/Seoul day key): a repeat success on the same
- * KST day updates the existing row in place; a new KST day appends a new row.
- * This is the ONLY writer of real daily records — synthetic replays never
- * call this.
+ * Thin, storage-agnostic wrapper around a `RealRecordsRepository` — the
+ * ONLY writer of real (non-synthetic) daily records; synthetic replays
+ * never call this. Takes the repository as a parameter so tests can inject
+ * an in-memory fake instead of talking to Supabase (see
+ * `supabase/__tests__/fakeRealRecordsRepository.ts`).
  */
-export async function upsertRealRecord(value: NormalizedEarthquake): Promise<DailyRecord[]> {
-  return store.update((records) => {
-    const now = value.requestedAt;
-    const existingIdx = records.findIndex((r) => r.recordDate === value.recordDate);
-    if (existingIdx >= 0) {
-      const existing = records[existingIdx];
-      const updated: DailyRecord = { ...value, firstRecordedAt: existing.firstRecordedAt, lastUpdatedAt: now };
-      const next = [...records];
-      next[existingIdx] = updated;
-      return next;
-    }
-    const created: DailyRecord = { ...value, firstRecordedAt: now, lastUpdatedAt: now };
-    return [...records, created].sort((a, b) => a.recordDate.localeCompare(b.recordDate));
-  });
+export function createRealStore(repository: RealRecordsRepository) {
+  return {
+    upsertRealRecord: (input: RealUpsertInput): Promise<DailyRecord> => repository.upsertToday(input),
+    getLatestRealRecords: (count = 2): Promise<DailyRecord[]> => repository.getLatest(count),
+    getAllRealRecords: (): Promise<DailyRecord[]> => repository.getAll(),
+  };
 }
 
-export async function getAllRealRecords(): Promise<DailyRecord[]> {
-  const records = await store.read();
-  return [...records].sort((a, b) => a.recordDate.localeCompare(b.recordDate));
+// Lazy default store: constructing the Supabase repository only requires
+// env vars to exist once a request actually calls one of these, not at
+// module import time (see supabaseAdmin.ts).
+let defaultStore: ReturnType<typeof createRealStore> | null = null;
+function getDefaultStore() {
+  if (!defaultStore) defaultStore = createRealStore(createSupabaseRealRecordsRepository());
+  return defaultStore;
 }
 
-export async function getLatestRealRecords(count = 2): Promise<DailyRecord[]> {
-  const records = await getAllRealRecords();
-  return records.slice(-count);
+export function upsertRealRecord(input: RealUpsertInput): Promise<DailyRecord> {
+  return getDefaultStore().upsertRealRecord(input);
+}
+
+export function getLatestRealRecords(count = 2): Promise<DailyRecord[]> {
+  return getDefaultStore().getLatestRealRecords(count);
+}
+
+export function getAllRealRecords(): Promise<DailyRecord[]> {
+  return getDefaultStore().getAllRealRecords();
 }

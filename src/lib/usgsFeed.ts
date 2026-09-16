@@ -6,12 +6,33 @@ export const USGS_FEED_URL =
 
 const TIMEOUT_MS = 8_000;
 
+/** Finds the winning feature's untouched raw JSON (before zod stripped anything) by id, for lossless `raw_payload` storage. Falls back to the validated feature if the raw shape is somehow unreadable — never throws. */
+export function extractRawFeature(raw: unknown, featureId: string): unknown {
+  if (!raw || typeof raw !== "object") return null;
+  const features = (raw as { features?: unknown }).features;
+  if (!Array.isArray(features)) return null;
+  return features.find((f) => f && typeof f === "object" && (f as { id?: unknown }).id === featureId) ?? null;
+}
+
+/** The feed's untouched `metadata` object (may include fields the schema doesn't validate, e.g. `api`). */
+export function extractRawMetadata(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object") return null;
+  return (raw as { metadata?: unknown }).metadata ?? null;
+}
+
+export interface UsgsFeedFetch {
+  /** Zod-validated/typed feed — unknown keys are stripped by the schema. */
+  feed: UsgsFeed;
+  /** The exact parsed JSON as USGS sent it, before validation narrowed it — kept so `raw_payload` can preserve fields the schema doesn't declare (e.g. `metadata.api`). */
+  raw: unknown;
+}
+
 /**
  * Fetches the real USGS feed. Never returns a cached/stale response — the
  * assignment requires live data on every real query, and route handlers that
  * call this always run with `cache: "no-store"`.
  */
-export async function fetchUsgsFeed(): Promise<UsgsFeed> {
+export async function fetchUsgsFeed(): Promise<UsgsFeedFetch> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
@@ -59,5 +80,5 @@ export async function fetchUsgsFeed(): Promise<UsgsFeed> {
     );
   }
 
-  return parsed.data;
+  return { feed: parsed.data, raw: json };
 }

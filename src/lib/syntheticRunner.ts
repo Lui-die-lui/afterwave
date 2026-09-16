@@ -30,15 +30,20 @@ async function buildStateFromStore(): Promise<Omit<SyntheticState, "status" | "e
   const records = await getSyntheticRecords();
   const meta = await getSyntheticMeta();
   const latestTwo = records.slice(-2);
+  const current = records[records.length - 1] ?? null;
+  const change = computeChange(latestTwo);
   return {
-    current: records[records.length - 1] ?? null,
-    lastSuccessAt: records[records.length - 1]?.lastUpdatedAt ?? null,
+    current,
+    lastSuccessAt: current?.lastUpdatedAt ?? null,
     records: latestTwo,
-    change: computeChange(latestTwo),
+    change,
     waitingForNextDay: records.length < 2,
     requestedAt: new Date().toISOString(),
     timeZone: "Asia/Seoul",
     feedUrl: SYNTHETIC_FEED_URL,
+    dailyRecords: latestTwo,
+    dailyChange: change?.delta ?? null,
+    lastSuccessfulRecord: current,
     isSynthetic: true,
     lastScenario: meta.lastScenario,
     anchorDate: meta.day1Date,

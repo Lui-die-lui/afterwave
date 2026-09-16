@@ -42,7 +42,7 @@ export function MagnitudeInterpretation({ magnitude, mmiMax }: { magnitude: numb
   }, [showInfo]);
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1">
       <div className="relative flex flex-wrap items-center gap-2" ref={popoverRef}>
         <span
           className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold"
@@ -67,7 +67,7 @@ export function MagnitudeInterpretation({ magnitude, mmiMax }: { magnitude: numb
         </button>
 
         {showInfo && (
-          <div id="magnitude-info-popover" role="dialog" aria-label="규모와 진도 안내" className="info-popover glass-panel-strong left-0 top-8">
+          <div id="magnitude-info-popover" role="dialog" aria-label="규모와 진도 안내" className="info-popover left-0 top-8">
             <div className="mb-1 flex items-center justify-between gap-2">
               <p className="font-semibold text-[var(--ink-0)]">규모 vs 진도</p>
               <button
@@ -85,8 +85,8 @@ export function MagnitudeInterpretation({ magnitude, mmiMax }: { magnitude: numb
         )}
       </div>
 
-      <p className="text-[17px] font-medium leading-snug text-[var(--ink-0)]">{guide.summary}</p>
-      <p className="text-xs text-[var(--ink-2)]">실제 흔들림은 거리·깊이·지반·건물에 따라 달라집니다.</p>
+      <p className="text-sm font-medium leading-snug text-[var(--ink-0)]">{guide.summary}</p>
+      <p className="text-xs leading-snug text-[var(--ink-2)]">실제 흔들림은 거리·깊이·지반·건물에 따라 달라집니다.</p>
 
       <div
         className="magnitude-ladder"

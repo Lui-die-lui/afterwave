@@ -1,28 +1,32 @@
 import { useEffect, useState } from "react";
-import { getRippleGeometry, getToneOpacity, type MagnitudeTone, type RippleSizeTier } from "@/lib/magnitudeGuide";
 import type { BoardStatus } from "@/lib/types";
 
 const STATUS_COLOR: Record<BoardStatus, string> = {
-  fresh: "#38bdf8",
-  stale: "#fb923c",
-  error: "#fb7185",
-  waiting: "#38bdf8",
+  fresh: "var(--marker-current)",
+  stale: "var(--status-stale)",
+  error: "var(--status-error)",
+  waiting: "var(--marker-current)",
 };
 
+/** Ring radii in screen px (diameters ≈ 32 / 50 / 70 before the animated scale). */
+const RING_RADII = [16, 25, 35];
+const HALO_WIDTH = 3;
+const TICK_INNER_GAP = 4;
+const TICK_LENGTH = 5;
+
+/**
+ * The current epicenter glyph, drawn at the origin of an already-positioned,
+ * zoom-counter-scaled marker group: three expanding rings, four ticks, an
+ * ivory halo and a solid brand-colored core that never fades. `coreRadius`
+ * comes from magnitude (10–14px diameter). Status drives the color and
+ * whether the rings animate (stale = static, dashed).
+ */
 export function EarthquakeRipple({
-  cx,
-  cy,
-  magnitude,
-  tier,
-  tone,
+  coreRadius,
   status,
   isLoading,
 }: {
-  cx: number;
-  cy: number;
-  magnitude: number;
-  tier: RippleSizeTier;
-  tone: MagnitudeTone;
+  coreRadius: number;
   status: BoardStatus;
   isLoading: boolean;
 }) {
@@ -40,41 +44,32 @@ export function EarthquakeRipple({
 
   useEffect(() => {
     if (!justRecovered) return;
-    const timer = setTimeout(() => setJustRecovered(false), 1500);
+    const timer = setTimeout(() => setJustRecovered(false), 1300);
     return () => clearTimeout(timer);
   }, [justRecovered]);
 
-  const geometry = getRippleGeometry(tier);
-  const toneOpacity = getToneOpacity(tone);
-  const color = STATUS_COLOR[status];
-  const rings = Array.from({ length: geometry.ringCount }, (_, i) => i);
-  const spreadStep = geometry.maxRadius / (geometry.ringCount + 1);
+  const tickStart = coreRadius + HALO_WIDTH + TICK_INNER_GAP;
+  const tickEnd = tickStart + TICK_LENGTH;
 
   return (
     <g
-      transform={`translate(${cx} ${cy})`}
       data-status={status}
       data-loading={isLoading ? "true" : "false"}
       data-recovered={justRecovered ? "true" : "false"}
       className="eq-ripple"
-      style={
-        {
-          "--eq-color": color,
-          "--eq-tone-opacity": toneOpacity,
-          "--eq-max-radius": `${geometry.maxRadius}px`,
-        } as React.CSSProperties
-      }
+      style={{ "--eq-color": STATUS_COLOR[status] } as React.CSSProperties}
     >
-      <circle className="eq-ripple-glow" r={geometry.maxRadius * 0.22} />
-      {rings.map((i) => (
-        <circle
-          key={i}
-          className="eq-ripple-ring"
-          r={spreadStep * (i + 1)}
-          style={{ "--ring-delay": `${i * 0.55}s`, "--ring-max-scale": (geometry.maxRadius / (spreadStep * (i + 1))).toFixed(2) } as React.CSSProperties}
-        />
+      {RING_RADII.map((r, i) => (
+        <circle key={r} className="eq-ripple-ring" r={r} style={{ "--ring-delay": `${i * 0.7}s` } as React.CSSProperties} />
       ))}
-      <circle className="eq-ripple-core" r={magnitude >= 7 ? 5 : magnitude >= 5 ? 4.2 : 3.4} />
+      <g className="eq-ripple-ticks">
+        <line className="eq-ripple-tick" x1={0} y1={-tickStart} x2={0} y2={-tickEnd} />
+        <line className="eq-ripple-tick" x1={0} y1={tickStart} x2={0} y2={tickEnd} />
+        <line className="eq-ripple-tick" x1={-tickStart} y1={0} x2={-tickEnd} y2={0} />
+        <line className="eq-ripple-tick" x1={tickStart} y1={0} x2={tickEnd} y2={0} />
+      </g>
+      <circle className="eq-ripple-halo" r={coreRadius + HALO_WIDTH} />
+      <circle className="eq-ripple-core" r={coreRadius} />
     </g>
   );
 }

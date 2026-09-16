@@ -52,4 +52,10 @@ export const ERROR_COPY: Record<Exclude<ErrorCode, "NONE">, ErrorCopy> = {
     message: "예상하지 못한 오류로 원천 데이터를 가져오지 못했습니다.",
     action: "다시 시도해주세요. 반복되면 잠시 후 다시 확인해주세요.",
   },
+  STORAGE_ERROR: {
+    title: "저장소 연결 실패",
+    message:
+      "실제 일별 기록 저장소(Supabase)에 연결하지 못했습니다. USGS 조회는 성공했더라도 값을 임의로 표시하지 않고 마지막 정상 저장값을 유지합니다.",
+    action: "잠시 후 다시 시도해주세요. 반복되면 저장소 연결 상태를 확인해주세요.",
+  },
 };

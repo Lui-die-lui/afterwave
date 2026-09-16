@@ -36,7 +36,8 @@ yarn-error.log*
 # vercel
 .vercel
 
-# runtime data (real + synthetic daily records; never seed fake dates here)
+# local leftovers from the old file-based store — both real and synthetic
+# records now live in Supabase; nothing in this repo writes here anymore
 /data/
 
 # typescript

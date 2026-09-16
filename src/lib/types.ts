@@ -80,7 +80,9 @@ export type ErrorCode =
   | "RATE_LIMITED"
   | "OFFLINE"
   | "SCHEMA_CHANGED"
-  | "UNKNOWN";
+  | "UNKNOWN"
+  /** Supabase (storage) failure — distinct from a USGS (live data) failure, per T04 §7: honestly tell the two apart rather than blaming the DB on USGS or vice versa. */
+  | "STORAGE_ERROR";
 
 export type BoardStatus = "fresh" | "stale" | "error" | "waiting";
 
@@ -107,6 +109,15 @@ export interface BoardState {
   requestedAt: string;
   timeZone: "Asia/Seoul";
   feedUrl: string;
+  /**
+   * Additive aliases kept alongside the fields above (never replacing them —
+   * `records`/`change`/`current` remain the shape every existing component
+   * reads) so the API response also satisfies the plain `{ dailyRecords,
+   * dailyChange, lastSuccessfulRecord }` shape on its own.
+   */
+  dailyRecords: DailyRecord[];
+  dailyChange: number | null;
+  lastSuccessfulRecord: NormalizedEarthquake | null;
 }
 
 export interface SyntheticState extends BoardState {

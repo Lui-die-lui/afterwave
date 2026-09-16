@@ -24,8 +24,20 @@ export async function POST(req: Request) {
     );
   }
 
-  const state = await runSyntheticScenario(scenario);
-  return NextResponse.json(state, {
-    headers: { "Cache-Control": "no-store, max-age=0" },
-  });
+  try {
+    const state = await runSyntheticScenario(scenario);
+    return NextResponse.json(state, {
+      headers: { "Cache-Control": "no-store, max-age=0" },
+    });
+  } catch {
+    // Storage-layer failure (e.g. the Supabase migration for
+    // afterwave_synthetic_state hasn't been run yet) — a clean JSON error
+    // instead of an unhandled 500. `runSyntheticScenario` already catches
+    // and classifies every FEED/scenario-logic failure itself; anything
+    // that still throws here is the storage layer, not the scenario.
+    return NextResponse.json(
+      { error: "합성 상태 저장소에 연결하지 못했습니다. Supabase 마이그레이션(0002_create_afterwave_synthetic_state.sql)을 실행했는지 확인해주세요." },
+      { status: 503, headers: { "Cache-Control": "no-store, max-age=0" } }
+    );
+  }
 }

@@ -8,7 +8,7 @@ import { IconX } from "./icons";
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <tr className="border-b border-white/8 last:border-none">
+    <tr className="border-b border-[var(--border-glass)] last:border-none">
       <th scope="row" className="py-2 pr-3 text-left text-xs font-normal text-[var(--ink-2)]">
         {label}
       </th>
@@ -68,7 +68,10 @@ export function TrustDialog({
             </p>
             <table className="w-full">
               <tbody>
-                <Row label="지진 ID (원자료 = 저장값 = 화면값)" value={current.earthquakeId} />
+                <Row
+                  label={isSynthetic ? "지진 ID (합성 원자료 → 합성 저장값 → 화면값)" : "지진 ID (원자료 = 저장값 = 화면값)"}
+                  value={current.earthquakeId}
+                />
                 <Row label="규모 (mag)" value={`${current.unit} ${formatMagnitude(current.magnitude)}`} />
                 <Row label="위치 (place)" value={current.place} />
                 <Row label="깊이 (depth)" value={`${current.depthKm.toFixed(1)} km`} />

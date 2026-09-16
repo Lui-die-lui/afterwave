@@ -1,4 +1,4 @@
-import { JsonFileStore } from "./jsonFileStore";
+import { createSyntheticStateRepository, type SyntheticStateRepository } from "./supabase/syntheticStateRepository";
 import type { BoardStatus, DailyRecord, ErrorCode } from "./types";
 
 export interface SyntheticMeta {
@@ -19,30 +19,64 @@ const DEFAULT_META: SyntheticMeta = {
   lastRunAt: null,
 };
 
-const recordsStore = new JsonFileStore<DailyRecord[]>("synthetic/records.json", []);
-const metaStore = new JsonFileStore<SyntheticMeta>("synthetic/meta.json", DEFAULT_META);
+/**
+ * Storage-agnostic wrapper around a `SyntheticStateRepository` — the ONLY
+ * place the Failure Lab's records/meta blobs are read or written. Takes the
+ * repository as a parameter so tests can inject an in-memory fake instead of
+ * talking to Supabase (see `supabase/__tests__/fakeSyntheticStateRepository.ts`).
+ */
+export function createSyntheticStore(repository: SyntheticStateRepository) {
+  return {
+    async getSyntheticRecords(): Promise<DailyRecord[]> {
+      const records = await repository.read<DailyRecord[]>("records", []);
+      return [...records].sort((a, b) => a.recordDate.localeCompare(b.recordDate));
+    },
 
-export async function getSyntheticRecords(): Promise<DailyRecord[]> {
-  const records = await recordsStore.read();
-  return [...records].sort((a, b) => a.recordDate.localeCompare(b.recordDate));
-}
-
-export async function upsertSyntheticRecord(record: DailyRecord): Promise<DailyRecord[]> {
-  return recordsStore.update((records) => {
-    const idx = records.findIndex((r) => r.recordDate === record.recordDate);
-    if (idx >= 0) {
-      const next = [...records];
-      next[idx] = { ...record, firstRecordedAt: records[idx].firstRecordedAt };
+    async upsertSyntheticRecord(record: DailyRecord): Promise<DailyRecord[]> {
+      const records = await repository.read<DailyRecord[]>("records", []);
+      const idx = records.findIndex((r) => r.recordDate === record.recordDate);
+      const next =
+        idx >= 0
+          ? records.map((r, i) => (i === idx ? { ...record, firstRecordedAt: r.firstRecordedAt } : r))
+          : [...records, record].sort((a, b) => a.recordDate.localeCompare(b.recordDate));
+      await repository.write("records", next);
       return next;
-    }
-    return [...records, record].sort((a, b) => a.recordDate.localeCompare(b.recordDate));
-  });
+    },
+
+    async getSyntheticMeta(): Promise<SyntheticMeta> {
+      return repository.read<SyntheticMeta>("meta", DEFAULT_META);
+    },
+
+    async updateSyntheticMeta(patch: Partial<SyntheticMeta>): Promise<SyntheticMeta> {
+      const current = await repository.read<SyntheticMeta>("meta", DEFAULT_META);
+      const next = { ...current, ...patch };
+      await repository.write("meta", next);
+      return next;
+    },
+  };
 }
 
-export async function getSyntheticMeta(): Promise<SyntheticMeta> {
-  return metaStore.read();
+// Lazy default store: constructing the Supabase repository only requires env
+// vars to exist once a request actually calls one of these, not at module
+// import time (see supabaseAdmin.ts).
+let defaultStore: ReturnType<typeof createSyntheticStore> | null = null;
+function getDefaultStore() {
+  if (!defaultStore) defaultStore = createSyntheticStore(createSyntheticStateRepository());
+  return defaultStore;
 }
 
-export async function updateSyntheticMeta(patch: Partial<SyntheticMeta>): Promise<SyntheticMeta> {
-  return metaStore.update((current) => ({ ...current, ...patch }));
+export function getSyntheticRecords(): Promise<DailyRecord[]> {
+  return getDefaultStore().getSyntheticRecords();
+}
+
+export function upsertSyntheticRecord(record: DailyRecord): Promise<DailyRecord[]> {
+  return getDefaultStore().upsertSyntheticRecord(record);
+}
+
+export function getSyntheticMeta(): Promise<SyntheticMeta> {
+  return getDefaultStore().getSyntheticMeta();
+}
+
+export function updateSyntheticMeta(patch: Partial<SyntheticMeta>): Promise<SyntheticMeta> {
+  return getDefaultStore().updateSyntheticMeta(patch);
 }

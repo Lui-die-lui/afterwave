@@ -1,26 +1,166 @@
 @import "tailwindcss";
 
+/* =========================================================================
+   Design tokens — light (warm ivory + muted terracotta brand) is the default
+   on :root; dark overrides live under [data-theme="dark"]. Every color in the
+   app resolves through one of these variables so both themes stay in sync
+   from one place. Brand orange is reserved for: the logo mark, the current
+   epicenter, selected/active map elements, the primary CTA, focus rings and
+   small accent lines — never for whole surfaces, all buttons or body text.
+   ========================================================================= */
+
 :root {
-  --bg-0: #05070f;
-  --bg-1: #0a0e1c;
-  --ink-0: #f4f6fb;
-  --ink-1: rgba(244, 246, 251, 0.76);
-  --ink-2: rgba(244, 246, 251, 0.54);
-  --panel-bg: rgba(9, 13, 26, 0.74);
-  --panel-bg-strong: rgba(8, 12, 24, 0.86);
-  --panel-border: rgba(255, 255, 255, 0.14);
-  --panel-shadow: 0 24px 70px rgba(2, 4, 10, 0.6);
-  --opaque-fallback: #10141f;
-  --status-fresh: #4ade80;
-  --status-stale: #fbbf24;
-  --status-error: #fb7185;
-  --status-waiting: #93c5fd;
-  --focus-ring: #7dd3fc;
-  --tone-minimal: #7dd3fc;
-  --tone-low: #38bdf8;
-  --tone-moderate: #22d3ee;
-  --tone-high: #fb923c;
-  --tone-extreme: #fb7185;
+  /* canvas */
+  --bg-canvas: #f9f7f3;
+  --bg-elevated: #fdfcfa;
+  --bg-gradient: radial-gradient(120% 80% at 12% -10%, rgba(217, 120, 71, 0.06), transparent 55%),
+    radial-gradient(100% 80% at 100% 0%, rgba(214, 180, 140, 0.1), transparent 55%), #f9f7f3;
+
+  /* text */
+  --ink-0: #24211d;
+  --ink-1: #5b534a;
+  --ink-2: #736b61;
+
+  /* glass surfaces, lightest -> most opaque */
+  --surface-0: rgba(255, 254, 251, 0.55);
+  --surface-1: rgba(255, 254, 251, 0.72);
+  --surface-2: rgba(255, 254, 251, 0.86);
+  --surface-3: rgba(255, 254, 252, 0.94);
+  --surface-4: #fffefc;
+
+  --border-glass: rgba(124, 105, 84, 0.16);
+  --border-glass-strong: rgba(124, 105, 84, 0.26);
+  --shadow-glass: 0 8px 24px rgba(96, 74, 52, 0.1), 0 1px 2px rgba(96, 74, 52, 0.06);
+  --shadow-glass-strong: 0 14px 36px rgba(96, 74, 52, 0.16), 0 2px 4px rgba(96, 74, 52, 0.08);
+  --opaque-fallback: #fdfcfa;
+  --scrollbar-thumb: rgba(124, 105, 84, 0.32);
+  /* Plain r,g,b triple (no alpha) so .aw-header can build its own top->bottom
+     fade — the fixed-alpha --surface-* tokens can't vary opacity mid-gradient. */
+  --surface-rgb: 255, 254, 251;
+
+  /* brand */
+  --brand: #d97847;
+  --brand-hover: #c96839;
+  --brand-strong: #9d4726; /* ≥4.9:1 on --brand-soft, so brand text passes AA at 12px */
+  --brand-soft: #f2ddd0;
+  --brand-faint: rgba(217, 120, 71, 0.12);
+  --focus-ring: #d97847;
+
+  /* data status — semantic, never the brand color */
+  --status-fresh: #196a55; /* ≥4.5:1 even on the now-more-transparent header */
+  --status-fresh-bg: #dcefe8;
+  --status-stale: #a66d2f;
+  --status-stale-bg: rgba(166, 109, 47, 0.14);
+  --status-error: #b8554d;
+  --status-error-bg: rgba(184, 85, 77, 0.12);
+  --status-waiting: #4f6fa8;
+  --status-waiting-bg: rgba(79, 111, 168, 0.12);
+
+  /* magnitude bands */
+  --tone-minimal: #6f8fb3;
+  --tone-low: #4f7fa8;
+  --tone-moderate: #2f8f7a;
+  --tone-high: #d97847;
+  --tone-extreme: #b8554d;
+
+  /* map */
+  --map-bg: #f2f0eb;
+  --map-ocean-glow: rgba(255, 255, 255, 0.35);
+  --map-land: #c5c9c6;
+  --map-border: rgba(76, 78, 73, 0.24);
+  --map-grid: rgba(91, 87, 80, 0.14);
+  --map-equator: rgba(91, 87, 80, 0.22);
+
+  /* markers */
+  --marker-current: #d97847;
+  --marker-halo: #fffdf9;
+  --marker-previous: #6b6fb8;
+  --marker-previous-bg: rgba(107, 111, 184, 0.16);
+
+  /* layout */
+  --rail-w-left: 340px;
+  --rail-w-right: 328px;
+  --rail-gap: 14px;
+  --mag-font-size: clamp(2.75rem, 7vh, 4.25rem);
+
+  /* motion */
+  --motion-fast: 150ms;
+  --motion-focus: 650ms;
+  /* Panel shell width — deliberately two separate tokens, not one shared
+     one: opening is allowed to take its time (the shell sliding open is
+     fine to feel relaxed), but closing/collapsing stays snappier. */
+  --panel-expand: 250ms;
+  --panel-collapse: 180ms;
+  /* Panel open/close content choreography (see .aw-rail-content below):
+     content fades OUT quickly before the shell shrinks. On open, content
+     starts fading in a bit before the shell finishes expanding, and that
+     fade itself is SHORT/snappy (content is fixed-width + clipped by
+     `.aw-rail-clip` regardless of the shell's current width, so starting
+     early can never reintroduce text reflow) — the shell's own slide can be
+     relaxed, but once content starts appearing it should reach full opacity
+     fast, not ease in slowly. */
+  --content-fade-out: 80ms;
+  --content-fade-in: 60ms;
+  --content-fade-in-delay: 190ms;
+}
+
+:root[data-theme="dark"] {
+  --bg-canvas: #0a0e17;
+  --bg-elevated: #10151f;
+  --bg-gradient: radial-gradient(120% 80% at 12% -10%, rgba(232, 138, 92, 0.08), transparent 55%),
+    radial-gradient(100% 80% at 100% 0%, rgba(99, 112, 168, 0.12), transparent 55%), #0a0e17;
+
+  --ink-0: #f3efe8;
+  --ink-1: rgba(243, 239, 232, 0.76);
+  --ink-2: rgba(243, 239, 232, 0.58);
+
+  --surface-0: rgba(17, 22, 36, 0.45);
+  --surface-1: rgba(21, 27, 44, 0.66);
+  --surface-2: rgba(20, 26, 42, 0.82);
+  --surface-3: rgba(17, 22, 36, 0.92);
+  --surface-4: #10151f;
+
+  --border-glass: rgba(170, 178, 196, 0.14);
+  --border-glass-strong: rgba(170, 178, 196, 0.24);
+  --shadow-glass: 0 10px 28px rgba(2, 4, 10, 0.45);
+  --shadow-glass-strong: 0 18px 44px rgba(2, 4, 10, 0.6);
+  --opaque-fallback: #10151f;
+  --scrollbar-thumb: rgba(243, 239, 232, 0.22);
+  --surface-rgb: 17, 22, 36;
+
+  --brand: #e88a5c;
+  --brand-hover: #f09a6e;
+  --brand-strong: #f3a37c;
+  --brand-soft: rgba(232, 138, 92, 0.22);
+  --brand-faint: rgba(232, 138, 92, 0.14);
+  --focus-ring: #e88a5c;
+
+  --status-fresh: #4fd39f;
+  --status-fresh-bg: rgba(79, 211, 159, 0.16);
+  --status-stale: #f0b25a;
+  --status-stale-bg: rgba(240, 178, 90, 0.16);
+  --status-error: #f28b83;
+  --status-error-bg: rgba(242, 139, 131, 0.16);
+  --status-waiting: #8fb0e8;
+  --status-waiting-bg: rgba(143, 176, 232, 0.16);
+
+  --tone-minimal: #8fb3d8;
+  --tone-low: #6fa3d6;
+  --tone-moderate: #3fc2a6;
+  --tone-high: #e88a5c;
+  --tone-extreme: #f28b83;
+
+  --map-bg: #0d1220;
+  --map-ocean-glow: rgba(232, 138, 92, 0.06);
+  --map-land: #2a3446;
+  --map-border: #465468;
+  --map-grid: rgba(255, 255, 255, 0.06);
+  --map-equator: rgba(255, 255, 255, 0.1);
+
+  --marker-current: #e88a5c;
+  --marker-halo: #f6f1e8;
+  --marker-previous: #a9adf0;
+  --marker-previous-bg: rgba(169, 173, 240, 0.2);
 }
 
 * {
@@ -34,13 +174,18 @@ body {
 
 body {
   margin: 0;
-  background: var(--bg-0);
+  background: var(--bg-canvas);
   color: var(--ink-0);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Apple SD Gothic Neo", "Noto Sans KR",
     sans-serif;
   font-size: 16px;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
+  /* Korean text wraps between words, not mid-syllable, at every narrow
+     width; overflow-wrap still lets a truly unbreakable token (a long URL)
+     break rather than overflow. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -48,94 +193,41 @@ body {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+    /* Collapses `transition-delay` too (not just duration) — without this,
+       a delayed transition (e.g. the panel content fade-in staged after the
+       shell width finishes) would still make the user wait out the full
+       delay before its now-instant transition fires, which is not "즉시
+       완료". `useAnimatedRail` also skips the opening/closing states
+       entirely under this preference, so this is defense-in-depth. */
+    transition-delay: 0.001ms !important;
     scroll-behavior: auto !important;
   }
 }
 
-/* ---------- Layout: full-bleed map stage ---------- */
-
-.aw-stage {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  min-height: 100dvh;
-  background: var(--bg-0);
+/* Thin, theme-aware scrollbars everywhere a scroll area is actually needed
+   (mobile document flow, the trust dialog table) — never the default fat
+   white system scrollbar. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
-@media (min-width: 1024px) {
-  .aw-stage {
-    height: 100dvh;
-    overflow: hidden;
-  }
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-/* Mobile: a normal-flow block, so it sits between the header and the panels in DOM/visual order. */
-.aw-map-layer {
-  position: relative;
-  height: 42vh;
-  min-height: 260px;
-  width: 100%;
-  background: radial-gradient(120% 100% at 50% 0%, rgba(56, 189, 248, 0.08), transparent 60%), #05070f;
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-/* Desktop: pulled out of flow into a full-bleed background layer behind the header/panels/dock, which each get position:relative + z-index via the `lg:relative lg:z-10` utility classes so they still paint above it. */
-@media (min-width: 1024px) {
-  .aw-map-layer {
-    position: absolute;
-    inset: 0;
-    height: 100%;
-    z-index: 0;
-  }
-}
-
-/* ---------- Glass surfaces ---------- */
-
-.glass-panel {
-  background: var(--panel-bg);
-  border: 1px solid var(--panel-border);
-  border-radius: 26px;
-  box-shadow: var(--panel-shadow);
-  backdrop-filter: blur(22px) saturate(150%);
-  -webkit-backdrop-filter: blur(22px) saturate(150%);
-}
-
-.glass-panel-strong {
-  background: var(--panel-bg-strong);
-  border: 1px solid var(--panel-border);
-  border-radius: 22px;
-  box-shadow: var(--panel-shadow);
-  backdrop-filter: blur(26px) saturate(160%);
-  -webkit-backdrop-filter: blur(26px) saturate(160%);
-}
-
-.glass-bar {
-  background: var(--panel-bg);
-  border: 1px solid var(--panel-border);
-  box-shadow: 0 12px 34px rgba(2, 4, 10, 0.45);
-  backdrop-filter: blur(20px) saturate(150%);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
-}
-
-@media (prefers-reduced-transparency: reduce) {
-  .glass-panel,
-  .glass-panel-strong,
-  .glass-bar {
-    background: var(--opaque-fallback);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-}
-
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .glass-panel,
-  .glass-panel-strong,
-  .glass-bar {
-    background: var(--opaque-fallback);
-  }
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 8px;
 }
 
 :focus-visible {
-  outline: 3px solid var(--focus-ring);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
   border-radius: 8px;
 }
@@ -147,6 +239,708 @@ button {
 
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Buttons (one system: secondary / ghost / brand) ---------- */
+
+.aw-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-glass);
+  background: var(--surface-2);
+  color: var(--ink-0);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    background-color var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    color var(--motion-fast) ease;
+}
+
+.aw-btn:hover {
+  background: var(--surface-4);
+  border-color: var(--border-glass-strong);
+}
+
+.aw-btn:active {
+  background: var(--surface-3);
+}
+
+.aw-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.aw-btn-sm {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.aw-btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink-1);
+}
+
+.aw-btn-ghost:hover {
+  background: var(--brand-faint);
+  border-color: transparent;
+  color: var(--ink-0);
+}
+
+.aw-btn-brand {
+  background: var(--brand-soft);
+  border-color: color-mix(in srgb, var(--brand) 40%, transparent);
+  color: var(--brand-strong);
+  font-weight: 600;
+}
+
+.aw-btn-brand:hover {
+  background: color-mix(in srgb, var(--brand-soft) 80%, var(--brand) 20%);
+  border-color: var(--brand);
+}
+
+.aw-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  border: 1px solid var(--border-glass);
+  background: var(--surface-2);
+  color: var(--ink-1);
+  transition:
+    background-color var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    color var(--motion-fast) ease;
+}
+
+.aw-icon-btn:hover {
+  background: var(--surface-4);
+  border-color: var(--border-glass-strong);
+  color: var(--ink-0);
+}
+
+.aw-link {
+  color: var(--brand-strong);
+  font-weight: 500;
+  text-decoration: none;
+  text-underline-offset: 3px;
+}
+
+.aw-link:hover {
+  text-decoration: underline;
+  color: var(--brand-hover);
+}
+
+/* ---------- Stage / grid layout ---------- */
+
+.aw-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--bg-gradient);
+}
+
+@media (min-width: 1024px) {
+  .aw-stage {
+    height: 100dvh;
+    overflow: hidden;
+  }
+}
+
+/* Mobile: normal-flow block between header and panels. Taller than before
+   (was 42vh/260px) so the world map itself has enough room to actually read
+   as a map instead of a narrow strip. */
+.aw-map-layer {
+  position: relative;
+  height: 56vh;
+  min-height: 340px;
+  width: 100%;
+  overflow: hidden;
+  background: radial-gradient(120% 100% at 50% 0%, var(--map-ocean-glow), transparent 60%), var(--map-bg);
+}
+
+/* Mobile only: fades the map smoothly into the page background instead of
+   cutting off at a hard edge right where the first stacked widget begins. */
+.aw-map-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 34%;
+  min-height: 96px;
+  background: linear-gradient(to bottom, transparent, var(--bg-canvas));
+  pointer-events: none;
+}
+
+/* Desktop: full-bleed background layer behind header/panels/dock, which each
+   get position:relative + z-index via `lg:relative lg:z-10` so they still
+   paint above it. Collapsing a rail never resizes this layer — it reveals
+   more of the map that was already there, so markers never need to move. */
+@media (min-width: 1024px) {
+  .aw-map-layer {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    z-index: 0;
+  }
+}
+
+/* No hard bottom edge. The translucent tint + blur live on ::before (not on
+   the header itself) so the fade-to-transparent mask only ever thins out the
+   background glass — logo/status/buttons in normal flow stay fully legible
+   all the way to the bottom of the bar. */
+.aw-header {
+  position: relative;
+  border-bottom: none;
+  isolation: isolate;
+}
+
+.aw-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: rgba(var(--surface-rgb), 0.4);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 45%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, black 45%, transparent 100%);
+  pointer-events: none;
+}
+
+.aw-logo-mark {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--brand-faint);
+  border: 1px solid color-mix(in srgb, var(--brand) 32%, transparent);
+  color: var(--brand);
+  flex-shrink: 0;
+}
+
+.aw-logo-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+  margin-left: 4px;
+  vertical-align: middle;
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .aw-header::before {
+    background: var(--opaque-fallback);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
+.aw-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (min-width: 1024px) {
+  /* A closed rail's own width is 0 — the map behind uses the full width and
+     nothing but the edge tab (absolutely positioned, see below) remains.
+     The grid tracks themselves are just `auto`: each outer column always
+     exactly matches whatever width `.aw-rail` (the actual animated element,
+     see below) currently has, so opening/closing one rail reflows the map
+     without needing its own `grid-template-columns` transition — and,
+     crucially, without the two rails having to share one transition (each
+     `.aw-rail`'s `width` transition is independent, which is what lets left
+     and right animate on completely different timing/delay). */
+  .aw-main {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: var(--rail-gap);
+    flex: 1;
+    min-height: 0;
+  }
+}
+
+/* Mid-width tier: narrower rails so the map keeps real breathing room
+   instead of the full desktop rail widths squeezing it. Vertical density
+   (padding/gap) stays governed by the max-height tiers below, which are
+   tuned against the worst-case stale/error content — this only frees up
+   horizontal space and never overrides that. */
+@media (min-width: 1024px) and (max-width: 1365px) {
+  :root {
+    --rail-w-left: clamp(260px, 27vw, 316px);
+    --rail-w-right: clamp(260px, 27vw, 328px);
+    --rail-gap: 10px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .aw-main {
+    max-width: 1800px;
+    margin: 0 auto;
+    width: 100%;
+  }
+}
+
+/* ---------- Side rails ---------- */
+/* Mobile: no box of its own — its widgets flow directly into .aw-main's
+   flex column via display:contents, ordered with the order-* utilities set
+   on each widget; the desktop-only head/tab are hidden, and the four-state
+   animation below never applies (only `.aw-rail[data-state]` selectors,
+   which are all inside the `min-width:1024px` query). Desktop: a
+   transparent rail column holding independent glass widgets, a small panel
+   head with a close button while open, and a viewport-edge tab while closed.
+
+   `.aw-rail` (`panel-shell`) is the ONLY thing whose `width` ever animates,
+   and it stays `overflow:visible` so its absolutely-positioned edge-tab
+   child (positioned against an ancestor further up, not against this
+   shell) is never itself clipped away while the shell is at/near 0 width.
+   The actual clipping lives one layer in, on `.aw-rail-clip`
+   (`width:100%; height:100%; overflow:hidden`, always matching the shell's
+   current width) — `.aw-rail-content` (`panel-content`, wrapping both the
+   head and the widgets) sits inside THAT: a separate, fixed-width inner
+   layer that always renders at the panel's fully-open width and only ever
+   transitions opacity/visibility, never width. `.aw-rail-clip` is what
+   reveals/clips it as the shell's width animates, so `.aw-rail-content`
+   never sees an intermediate narrow width to reflow its text against — the
+   "letters unfurling one at a time" artifact this whole block exists to
+   prevent.
+
+   Sequencing (both directions use CSS `transition-delay`, driven by the
+   `data-state` the JS state machine in Dashboard.tsx sets — see
+   `useAnimatedRail`):
+     open:  shell width animates immediately (0 delay) -> content starts
+            fading in shortly before the shell finishes expanding
+            (`transition-delay: var(--content-fade-in-delay)`, deliberately
+            a bit less than `--panel-expand` so the panel doesn't sit empty
+            for the whole expand — content is fixed-width + clipped
+            regardless, so this overlap can never reintroduce text reflow).
+     close: content fades out immediately (0 delay) -> shell width only
+            starts shrinking once that's done (`transition-delay:
+            var(--content-fade-out)` on the shell itself).
+   The edge tab only appears once `data-state` reaches the terminal
+   "closed" value — never during "closing" — so it can't visually overlap a
+   still-shrinking shell. */
+
+.aw-rail {
+  display: contents;
+}
+
+.aw-rail-clip {
+  display: contents;
+}
+
+.aw-rail-content {
+  display: contents;
+}
+
+.aw-rail-widgets {
+  display: contents;
+}
+
+.aw-rail-head,
+.aw-edge-tab {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .aw-rail {
+    /* `.aw-main` only has two DOM children now (left rail, right rail) —
+       without this, grid auto-placement fills column 1 then column 2 (the
+       `minmax(0,1fr)` map track) in DOM order, since there's no third item
+       left to reach column 3. That put the right rail INSIDE the map's own
+       column, flush against the left rail with no map space between them.
+       Pinning each rail to its actual column makes placement independent of
+       DOM order/item count. */
+    --target-w: var(--rail-w-left);
+    grid-column: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    width: 0;
+    min-width: 0;
+    overflow: visible;
+    /* Base/default duration is the COLLAPSE one — "closing" (below) needs no
+       duration override, only a delay. "opening"/"open" override just
+       `transition-duration` to the (typically longer) expand token, without
+       needing to repeat the property/easing already set here. */
+    transition: width var(--panel-collapse) ease;
+  }
+
+  .aw-rail[data-side="right"] {
+    --target-w: var(--rail-w-right);
+    grid-column: 3;
+  }
+
+  .aw-rail[data-state="opening"],
+  .aw-rail[data-state="open"] {
+    width: var(--target-w);
+    transition-duration: var(--panel-expand);
+  }
+
+  .aw-rail[data-state="closing"] {
+    width: 0;
+    transition-delay: var(--content-fade-out);
+  }
+
+  .aw-rail-clip {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .aw-rail-content {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    width: var(--target-w);
+    flex-shrink: 0;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      opacity var(--content-fade-out) ease,
+      visibility 0s linear var(--content-fade-out);
+  }
+
+  .aw-rail[data-state="open"] .aw-rail-content {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition:
+      opacity var(--content-fade-in) ease var(--content-fade-in-delay),
+      visibility 0s linear var(--content-fade-in-delay);
+  }
+
+  .aw-rail-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-shrink: 0;
+    height: 32px;
+    margin-bottom: 8px;
+    padding: 0 2px;
+  }
+
+  .aw-rail[data-side="right"] .aw-rail-head {
+    flex-direction: row-reverse;
+  }
+
+  /* Sits directly on the map (no surface behind it), so it uses the
+     primary ink to stay readable over land as well as water. */
+  .aw-rail-head-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--ink-0);
+  }
+
+  .aw-rail-widgets {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* Collapsed state: the only thing left is a small tab hugging the
+     viewport edge (no margin), vertically centered in the map area. It is
+     positioned against .aw-main's full-width wrapper, so left:0 / right:0
+     is the real screen edge even though the rail's own column is 0 wide.
+     Gated on the TERMINAL "closed" state only — never "closing" — so it
+     never appears until the shell has actually finished shrinking. */
+  .aw-rail[data-state="closed"] .aw-edge-tab {
+    display: flex;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 104px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 0;
+    background: var(--surface-3);
+    border: 1px solid var(--border-glass-strong);
+    box-shadow: var(--shadow-glass);
+    color: var(--ink-1);
+    pointer-events: auto;
+    cursor: pointer;
+    transition:
+      background-color var(--motion-fast) ease,
+      box-shadow var(--motion-fast) ease,
+      color var(--motion-fast) ease;
+  }
+
+  .aw-rail[data-state="closed"][data-side="left"] .aw-edge-tab {
+    left: 0;
+    border-left: none;
+    border-radius: 0 14px 14px 0;
+  }
+
+  .aw-rail[data-state="closed"][data-side="right"] .aw-edge-tab {
+    right: 0;
+    border-right: none;
+    border-radius: 14px 0 0 14px;
+  }
+
+  .aw-edge-tab:hover {
+    background: var(--surface-4);
+    box-shadow: var(--shadow-glass-strong);
+    color: var(--ink-0);
+  }
+
+  .aw-edge-tab:focus-visible {
+    outline-offset: -3px;
+  }
+
+  /* Upright glyphs read naturally top-to-bottom for a 4-character Korean
+     label; the label is intentionally short so it never wraps per-letter. */
+  .aw-edge-tab-label {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    line-height: 1;
+  }
+}
+
+/* ---------- Bottom dock collapse (desktop only) ---------- */
+/* Mirrors the left/right rail's open/closed pair exactly — collapsing hides
+   the dock panel entirely and leaves only a small tab hugging the bottom
+   viewport edge, so the map behind reclaims that space. Mobile always shows
+   the dock in normal flow; this collapse only exists at lg+. */
+.aw-dock-tab {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  #aw-dock[data-open="false"] .aw-dock {
+    display: none;
+  }
+
+  #aw-dock[data-open="true"] .aw-dock-tab {
+    display: none;
+  }
+
+  .aw-dock-tab {
+    display: flex;
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    width: 128px;
+    height: 32px;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: var(--surface-3);
+    border: 1px solid var(--border-glass-strong);
+    border-bottom: none;
+    border-radius: 14px 14px 0 0;
+    box-shadow: var(--shadow-glass);
+    color: var(--ink-1);
+    font-size: 12px;
+    font-weight: 600;
+    pointer-events: auto;
+    cursor: pointer;
+    transition:
+      background-color var(--motion-fast) ease,
+      color var(--motion-fast) ease;
+  }
+
+  .aw-dock-tab:hover {
+    background: var(--surface-4);
+    color: var(--ink-0);
+  }
+}
+
+/* ---------- Glass widgets ---------- */
+/* Three intensity steps: annotations are the lightest, ordinary widgets sit
+   in the middle, the primary earthquake widget / dialogs are the most opaque
+   so their text always wins contrast against the map behind. */
+
+.aw-widget,
+.aw-widget-primary {
+  border-radius: 22px;
+  padding: 16px 18px;
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: blur(20px) saturate(130%);
+  -webkit-backdrop-filter: blur(20px) saturate(130%);
+}
+
+.aw-widget {
+  background: var(--surface-2);
+}
+
+.aw-widget-primary {
+  background: var(--surface-3);
+  border-color: var(--border-glass-strong);
+}
+
+.aw-widget-title {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--ink-2);
+  margin: 0 0 8px;
+}
+
+.aw-divider {
+  height: 1px;
+  background: var(--border-glass);
+  border: none;
+  margin: 0;
+}
+
+/* Row inside a widget: hairline-separated, never a nested card. */
+.aw-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.aw-row:last-child {
+  border-bottom: none;
+}
+
+.aw-annotation {
+  background: var(--surface-2);
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: blur(14px) saturate(130%);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
+}
+
+.aw-bar {
+  background: var(--surface-2);
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .aw-widget,
+  .aw-widget-primary,
+  .aw-annotation,
+  .aw-bar {
+    background: var(--opaque-fallback);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .aw-widget,
+  .aw-widget-primary,
+  .aw-annotation,
+  .aw-bar,
+  .aw-edge-tab,
+  .aw-map-controls,
+  .aw-dock,
+  .eq-marker-label {
+    background: var(--opaque-fallback);
+  }
+
+  .aw-header::before {
+    background: var(--opaque-fallback);
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
+/* Compact density at desktop heights that don't leave much room to spare —
+   tightens padding/gaps rather than clipping or scrolling anything away. */
+@media (min-width: 1024px) and (max-height: 900px) {
+  .aw-widget,
+  .aw-widget-primary {
+    padding: 12px 16px;
+    border-radius: 20px;
+  }
+  .aw-widget-title {
+    margin-bottom: 6px;
+  }
+  .aw-main {
+    gap: 10px;
+  }
+  .aw-rail-widgets {
+    gap: 8px;
+  }
+}
+
+/* Below this height, padding stays a safe minimum relative to radius (never
+   the near-zero padding that let text visually spill past a rounded corner)
+   — the radius itself shrinks instead, which reads fine at this density. */
+@media (min-width: 1024px) and (max-height: 820px) {
+  .aw-widget,
+  .aw-widget-primary {
+    padding: 10px 14px;
+    border-radius: 18px;
+  }
+  .aw-widget-title {
+    font-size: 11px;
+    margin-bottom: 2px;
+  }
+  .aw-rail-head {
+    height: 28px;
+    margin-bottom: 4px;
+  }
+  .aw-main {
+    gap: 8px;
+  }
+  .aw-rail-widgets {
+    gap: 4px;
+  }
+  .aw-row {
+    padding: 4px 0;
+  }
+  .magnitude-ladder-step {
+    height: 10px;
+  }
+  :root {
+    --mag-font-size: clamp(2.25rem, 5.5vh, 3.5rem);
+  }
 }
 
 /* ---------- Magnitude severity ladder ---------- */
@@ -161,46 +955,54 @@ button {
   width: 9px;
   height: 14px;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--border-glass-strong);
 }
 
 .magnitude-ladder-step[data-active="true"] {
   background: var(--step-color, var(--tone-moderate));
 }
 
-/* ---------- Earthquake ripple marker ---------- */
+/* ---------- Current epicenter marker ---------- */
+/* Layers, inner to outer: brand-orange core (10–14px by magnitude), a 3px
+   ivory halo so the core separates from any land color, four short ticks,
+   then three concentric rings that expand outward while fading. Sizes are
+   in screen px because the marker group is counter-scaled against zoom. */
 
-.eq-ripple-glow {
-  fill: var(--eq-color, var(--status-fresh));
-  opacity: calc(0.5 * var(--eq-tone-opacity, 1));
-  filter: blur(4px);
+.eq-ripple-halo {
+  fill: var(--marker-halo);
 }
 
 .eq-ripple-core {
-  fill: var(--eq-color, var(--status-fresh));
+  fill: var(--eq-color, var(--marker-current));
+}
+
+.eq-ripple-tick {
+  stroke: var(--eq-color, var(--marker-current));
+  stroke-width: 1.6;
+  stroke-linecap: round;
 }
 
 .eq-ripple-ring {
   fill: none;
-  stroke: var(--eq-color, var(--status-fresh));
-  stroke-width: 1.4;
+  stroke: var(--eq-color, var(--marker-current));
+  stroke-width: 1.5;
   transform-box: fill-box;
   transform-origin: center;
-  opacity: calc(0.6 * var(--eq-tone-opacity, 1));
-  animation: eq-ripple-expand 3.4s ease-out infinite;
+  opacity: 0.8;
+  animation: eq-ripple-expand 2.8s cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
   animation-delay: var(--ring-delay, 0s);
 }
 
 @keyframes eq-ripple-expand {
   0% {
-    transform: scale(0.5);
-    opacity: calc(0.6 * var(--eq-tone-opacity, 1));
+    transform: scale(0.6);
+    opacity: 0.85;
   }
-  65% {
-    opacity: calc(0.18 * var(--eq-tone-opacity, 1));
+  70% {
+    opacity: 0.2;
   }
   100% {
-    transform: scale(var(--ring-max-scale, 1.8));
+    transform: scale(1.15);
     opacity: 0;
   }
 }
@@ -215,36 +1017,36 @@ button {
     opacity: 1;
   }
   50% {
-    opacity: 0.35;
+    opacity: 0.4;
   }
 }
 
+/* Stale: last-good value — rings stop moving and go dashed, ticks dim. */
 .eq-ripple[data-status="stale"] .eq-ripple-ring {
   animation: none;
-  stroke-dasharray: 3 5;
-  transform: scale(1);
-  opacity: 0.55;
+  stroke-dasharray: 3 4;
+  transform: scale(0.9);
+  opacity: 0.5;
 }
 
-.eq-ripple[data-status="stale"] .eq-ripple-glow {
-  opacity: 0.25;
-  filter: blur(2px);
+.eq-ripple[data-status="stale"] .eq-ripple-tick {
+  opacity: 0.6;
 }
 
 .eq-ripple[data-recovered="true"] .eq-ripple-ring {
   animation-name: eq-ripple-recover;
-  animation-duration: 1.4s;
+  animation-duration: 1.2s;
   animation-iteration-count: 1;
   animation-delay: 0s;
 }
 
 @keyframes eq-ripple-recover {
   0% {
-    transform: scale(0.3);
+    transform: scale(0.4);
     opacity: 0.95;
   }
   100% {
-    transform: scale(calc(var(--ring-max-scale, 1.8) * 1.15));
+    transform: scale(1.3);
     opacity: 0;
   }
 }
@@ -253,10 +1055,7 @@ button {
   .eq-ripple-ring {
     animation: none !important;
     transform: scale(1) !important;
-    opacity: calc(0.32 * var(--eq-tone-opacity, 1)) !important;
-  }
-  .eq-ripple[data-status="stale"] .eq-ripple-ring {
-    opacity: 0.45 !important;
+    opacity: 0.35 !important;
   }
   .eq-ripple[data-loading="true"] .eq-ripple-core {
     animation: none !important;
@@ -264,13 +1063,326 @@ button {
   }
 }
 
-/* ---------- Popover / dialog ---------- */
+/* ---------- Markers: shared, previous, merged, label ---------- */
+
+.eq-marker {
+  cursor: pointer;
+  outline: none;
+}
+
+.eq-marker:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+/* Previous daily record: a static double-bordered diamond in blue-violet —
+   distinct from the current marker by shape, not only by color. */
+.eq-marker-previous-outer {
+  fill: var(--marker-halo);
+  stroke: var(--marker-previous);
+  stroke-width: 1.8;
+}
+
+.eq-marker-previous-inner {
+  fill: var(--marker-previous);
+}
+
+.eq-marker-previous-ring {
+  fill: none;
+  stroke: var(--marker-previous);
+  stroke-width: 1.6;
+}
+
+.eq-marker-focus-ring {
+  fill: none;
+  stroke: var(--focus-ring);
+  stroke-width: 1.6;
+  stroke-dasharray: 3 3;
+}
+
+.eq-marker-label-wrap {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+}
+
+.eq-marker-label-wrap[data-align="start"] {
+  justify-content: flex-start;
+}
+
+.eq-marker-label-wrap[data-align="end"] {
+  justify-content: flex-end;
+}
+
+.eq-marker-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: max-content;
+  padding: 5px 10px 5px 9px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.1;
+  white-space: nowrap;
+  color: var(--ink-0);
+  background: var(--surface-3);
+  border: 1px solid var(--border-glass-strong);
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: blur(12px) saturate(130%);
+  -webkit-backdrop-filter: blur(12px) saturate(130%);
+}
+
+.eq-marker-label-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--marker-current);
+  flex-shrink: 0;
+}
+
+.eq-marker[data-variant="previous"] .eq-marker-label-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--marker-previous);
+  transform: rotate(45deg);
+}
+
+.eq-marker[data-status="stale"] .eq-marker-label-dot {
+  background: var(--status-stale);
+}
+
+.eq-marker[data-status="error"] .eq-marker-label-dot {
+  background: var(--status-error);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .eq-marker-label {
+    background: var(--opaque-fallback);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* ---------- Map legend, controls, popover ---------- */
+
+.aw-map-legend {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 11px;
+  border-radius: 12px;
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--ink-1);
+  pointer-events: none;
+}
+
+.aw-map-controls {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-glass-strong);
+  box-shadow: var(--shadow-glass);
+  pointer-events: auto;
+}
+
+.aw-map-controls button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  color: var(--ink-1);
+  transition:
+    background-color var(--motion-fast) ease,
+    color var(--motion-fast) ease;
+}
+
+.aw-map-controls button:hover {
+  background: var(--brand-faint);
+  color: var(--ink-0);
+}
+
+.aw-map-controls button:active {
+  background: var(--brand-soft);
+}
+
+.aw-map-controls button:disabled {
+  opacity: 0.4;
+}
+
+.aw-map-controls button[data-brand="true"] {
+  color: var(--brand);
+}
+
+.aw-map-controls button[data-brand="true"]:hover {
+  color: var(--brand-strong);
+}
+
+.aw-map-controls-sep {
+  height: 1px;
+  margin: 2px 6px;
+  background: var(--border-glass);
+}
+
+/* Solid (not glass) so the map's land shapes never read through the text;
+   the top accent line says which record it belongs to. Smaller by default
+   (mobile) — the shorter map viewport there leaves less room for it to sit
+   in — and restored to its fuller desktop size below. */
+.eq-popover {
+  position: absolute;
+  width: min(248px, 78vw);
+  padding: 11px 13px 11px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--surface-4);
+  border: 1px solid var(--border-glass-strong);
+  box-shadow: var(--shadow-glass-strong);
+  color: var(--ink-0);
+  animation: eq-pop-in 160ms ease-out;
+}
+
+@media (min-width: 1024px) {
+  .eq-popover {
+    width: min(292px, 80vw);
+    padding: 14px 16px 14px;
+    border-radius: 16px;
+  }
+}
+
+.eq-popover::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--brand);
+}
+
+.eq-popover[data-kind="previous"]::before {
+  background: var(--marker-previous);
+}
+
+@keyframes eq-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.eq-popover-kv {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 10px;
+  row-gap: 0;
+  font-size: 11px;
+}
+
+@media (min-width: 1024px) {
+  .eq-popover-kv {
+    column-gap: 12px;
+    font-size: 12px;
+  }
+}
+
+.eq-popover-kv dt {
+  color: var(--ink-2);
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.eq-popover-kv dd {
+  margin: 0;
+  padding: 4px 0;
+  text-align: right;
+  color: var(--ink-0);
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.eq-popover-kv dt:nth-last-of-type(1),
+.eq-popover-kv dd:nth-last-of-type(1) {
+  border-bottom: none;
+}
+
+/* ---------- Failure lab dock (observability console) ---------- */
+
+.aw-dock {
+  background: var(--surface-3);
+  border: 1px solid var(--border-glass);
+  border-radius: 16px;
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+.aw-dock-seg {
+  display: grid;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 11px;
+  background: var(--surface-1);
+  border: 1px solid var(--border-glass);
+}
+
+.aw-dock-seg button {
+  height: 30px;
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition:
+    background-color var(--motion-fast) ease,
+    color var(--motion-fast) ease;
+}
+
+.aw-dock-seg button:hover {
+  background: var(--surface-3);
+  color: var(--ink-0);
+}
+
+.aw-dock-seg button[aria-pressed="true"] {
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+  font-weight: 600;
+}
+
+.aw-dock-seg button:disabled {
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .aw-dock,
+  .aw-map-controls,
+  .aw-edge-tab {
+    background: var(--opaque-fallback);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* ---------- In-widget popover / dialog ---------- */
 
 .info-popover {
   position: absolute;
   z-index: 40;
   /* Anchored to a full-width relative row (see MagnitudeInterpretation), so
-     matching that row's width keeps the popover inside the panel instead of
+     matching that row's width keeps the popover inside the widget instead of
      overflowing past its edge. */
   width: 100%;
   max-width: 320px;
@@ -278,30 +1390,49 @@ button {
   font-size: 13px;
   line-height: 1.5;
   color: var(--ink-1);
+  background: var(--surface-4);
+  border: 1px solid var(--border-glass-strong);
+  border-radius: 14px;
+  box-shadow: var(--shadow-glass-strong);
 }
 
 .trust-dialog {
-  background: var(--panel-bg-strong);
+  background: var(--surface-4);
   color: var(--ink-0);
-  border: 1px solid var(--panel-border);
-  border-radius: 22px;
-  box-shadow: var(--panel-shadow);
-  backdrop-filter: blur(26px) saturate(160%);
-  -webkit-backdrop-filter: blur(26px) saturate(160%);
+  border: 1px solid var(--border-glass-strong);
+  border-radius: 20px;
+  box-shadow: var(--shadow-glass-strong);
   max-width: min(560px, 92vw);
+  max-height: min(80vh, 640px);
   width: 100%;
   padding: 0;
+  overflow: auto;
 }
 
 .trust-dialog::backdrop {
-  background: rgba(3, 5, 12, 0.62);
+  background: rgba(36, 33, 29, 0.36);
   backdrop-filter: blur(2px);
 }
 
-@media (prefers-reduced-transparency: reduce) {
-  .trust-dialog {
-    background: var(--opaque-fallback);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
+:root[data-theme="dark"] .trust-dialog::backdrop {
+  background: rgba(3, 5, 12, 0.62);
+}
+
+/* ---------- Map colors (theme-aware) ---------- */
+
+.aw-map-ocean {
+  fill: var(--map-bg);
+}
+
+.aw-map-grid {
+  stroke: var(--map-grid);
+}
+
+.aw-map-equator {
+  stroke: var(--map-equator);
+}
+
+.aw-map-land {
+  fill: var(--map-land);
+  stroke: var(--map-border);
 }

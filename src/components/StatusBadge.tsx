@@ -15,7 +15,11 @@ export function StatusBadge({ status, size = "md" }: { status: BoardStatus; size
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full border font-medium ${pad}`}
-      style={{ color: meta.color, borderColor: meta.color + "55", background: meta.color + "14" }}
+      style={{
+        color: meta.color,
+        borderColor: `color-mix(in srgb, ${meta.color} 45%, transparent)`,
+        background: `color-mix(in srgb, ${meta.color} 14%, transparent)`,
+      }}
     >
       <Icon className="h-4 w-4 shrink-0" aria-hidden />
       {meta.label}
